@@ -3,4 +3,8 @@
     <string name="launch_camera">写真を撮影</string>
     <string name="previewContent">画像プレビュー</string>
     <string name="getPic">ギャラリーを開く</string>
+    <string name="sendPic">送信</string>
+    <string name="connect">接続</string>
+    <string name="ipAddress">IPアドレス</string>
+    <string name="port">ポート番号</string>
 </resources>
