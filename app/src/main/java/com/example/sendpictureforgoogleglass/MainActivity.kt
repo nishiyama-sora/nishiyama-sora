@@ -4,19 +4,19 @@ import android.Manifest
 import android.app.Activity
 import android.bluetooth.BluetoothManager
 import android.content.*
+import android.content.ContentValues.TAG
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.*
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraProvider
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -35,6 +35,7 @@ import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Files.exists
 import java.nio.file.Paths
+
 
 
 class MainActivity : AppCompatActivity() {
@@ -172,7 +173,29 @@ class MainActivity : AppCompatActivity() {
         */
 
 
+        val imageCapture = ImageCapture.Builder().setFlashMode(ImageCapture.FLASH_MODE_AUTO)
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build()
+
+
         binding.ipSend?.setOnClickListener {
+
+            val outPutFileOptions = ImageCapture.OutputFileOptions.Builder(File("/storage/emulated/0/Pictures/a.jpg")).build()
+
+            try {
+                imageCapture.takePicture(outPutFileOptions, ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageSavedCallback {
+                    override fun onError(error: ImageCaptureException) {
+                        //Toast.makeText(this, "撮影に失敗しました", LENGTH_SHORT).show()
+                        error.printStackTrace()
+                    }
+
+                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+
+                    }
+                })
+
+            } catch(e: Exception) {
+                e.printStackTrace()
+            }
 
             val re1 = Regex("[0-9]{1,}\\.[0-9]{1,}\\.[0-9]{1,}\\.[0-9]{1,}")
             val addressText = binding.ipAddressForm?.text.toString()
@@ -353,6 +376,8 @@ class MainActivity : AppCompatActivity() {
         //val path = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         //val path = applicationContext.filesDir
         //File("/storage/emulated/0/Pictures").name
+
+
 
         var numFile = 0
         var tmp : File? = null
