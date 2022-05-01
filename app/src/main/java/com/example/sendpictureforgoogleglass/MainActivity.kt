@@ -35,15 +35,20 @@ import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Files.exists
 import java.nio.file.Paths
-
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.Executor
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var cameraProviderFuture : ListenableFuture<ProcessCameraProvider>
+    private var imageCapture: ImageCapture? = null
+    private lateinit var cameraExecutor:ExecutorService
 
-    var active: Boolean = true
 
     companion object {
         const val CAMERA_PERMISSION_REQUEST_CODE = 1
@@ -57,13 +62,16 @@ class MainActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
+        cameraExecutor = Executors.newSingleThreadExecutor()
 
+        /*
         cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener(Runnable {
             val cameraProvider = cameraProviderFuture.get()
             bindPreview(cameraProvider)
         }, ContextCompat.getMainExecutor(this))
+        */
 
         /*
         //カメラプレビュー
@@ -106,6 +114,10 @@ class MainActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSIONS_REQUEST_CODE)
         }
 
+        //
+        if (checkCameraPermission()) {
+            startCamera()
+        }
 
         /*
         //Bluetoothのサポート確認
@@ -172,30 +184,36 @@ class MainActivity : AppCompatActivity() {
         }
         */
 
-
+        /*
         val imageCapture = ImageCapture.Builder().setFlashMode(ImageCapture.FLASH_MODE_AUTO)
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build()
-
+        */
 
         binding.ipSend?.setOnClickListener {
 
-            val outPutFileOptions = ImageCapture.OutputFileOptions.Builder(File("/storage/emulated/0/Pictures/a.jpg")).build()
+            //val outPutFileOptions = ImageCapture.OutputFileOptions.Builder(File("/storage/emulated/0/Pictures/")).build()
 
+            /*
             try {
+
+
                 imageCapture.takePicture(outPutFileOptions, ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageSavedCallback {
                     override fun onError(error: ImageCaptureException) {
                         //Toast.makeText(this, "撮影に失敗しました", LENGTH_SHORT).show()
-                        error.printStackTrace()
+                        Log.e(TAG, "${error.message}", error)
                     }
 
                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-
+                        Toast.makeText(this@MainActivity, "撮影完了", LENGTH_SHORT).show()
                     }
                 })
 
             } catch(e: Exception) {
                 e.printStackTrace()
             }
+            */
+
+            takePhoto()
 
             val re1 = Regex("[0-9]{1,}\\.[0-9]{1,}\\.[0-9]{1,}\\.[0-9]{1,}")
             val addressText = binding.ipAddressForm?.text.toString()
@@ -273,6 +291,35 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+    private fun startCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+
+        cameraProviderFuture.addListener({
+
+            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+
+            val preview = Preview.Builder().build().also {mPreview->
+                mPreview.setSurfaceProvider(
+                    binding.previewView?.surfaceProvider
+                )
+            }
+
+            imageCapture = ImageCapture.Builder().build()
+
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            try {
+                cameraProvider.unbindAll()
+
+                cameraProvider.bindToLifecycle(
+                    this, cameraSelector,
+                    preview, imageCapture
+                )
+            } catch (e: java.lang.Exception) {
+                Log.d(TAG, "カメラ起動に失敗しました", e)
+            }
+        }, ContextCompat.getMainExecutor(this))
+    }
+
     //カメラアプリで写真撮影を行う
     private fun takePicture() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
@@ -281,6 +328,40 @@ class MainActivity : AppCompatActivity() {
         getResult.launch(intent)
     }
 
+    private fun takePhoto() {
+
+        val imageCapture = imageCapture ?: return
+        val photoFile = File(
+            File("/storage/emulated/0/Pictures/"),
+            SimpleDateFormat("yy-MM-dd-HH-mm-ss-SSS", Locale.getDefault())
+                .format(System.currentTimeMillis()) + ".jpg")
+
+        val outputOption = ImageCapture
+            .OutputFileOptions
+            .Builder(photoFile)
+            .build()
+
+        imageCapture.takePicture(
+            outputOption, ContextCompat.getMainExecutor(this),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onError(error: ImageCaptureException) {
+                    //Toast.makeText(this, "撮影に失敗しました", LENGTH_SHORT).show()
+                    Log.e(TAG, "${error.message}", error)
+                }
+
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                    Toast.makeText(this@MainActivity, "撮影完了", LENGTH_SHORT).show()
+                }
+            }
+        )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraExecutor.shutdown()
+    }
+
+    /*
     //カメラを選択し，ライフサイクルとユースケースをバインド
     fun bindPreview(cameraProvider: ProcessCameraProvider) {
         var preview : Preview = Preview.Builder().build()
@@ -291,6 +372,7 @@ class MainActivity : AppCompatActivity() {
 
         var camera = cameraProvider.bindToLifecycle(this as LifecycleOwner, cameraSelector, preview)
     }
+    */
 
     //カメラのパーミッションの確認
     private fun checkCameraPermission() = PackageManager.PERMISSION_GRANTED ==
