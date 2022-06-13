@@ -5,6 +5,10 @@
     <string name="getPic">ギャラリーを開く</string>
     <string name="sendPic">送信</string>
     <string name="connect">接続</string>
+    <string name="setting">設定完了</string>
     <string name="ipAddress">IPアドレス</string>
     <string name="port">ポート番号</string>
+    <string name="start">撮影開始</string>
+    <string name="stop">撮影停止</string>
+    <string name="cancel">キャンセル</string>
 </resources>

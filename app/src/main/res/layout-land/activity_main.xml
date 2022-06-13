@@ -4,114 +4,26 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingLeft="20dp"
-    android:paddingRight="20dp"
-    android:paddingTop="20dp"
-    android:paddingBottom="20dp"
     android:orientation="vertical"
     tools:context=".MainActivity">
 
 
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
-        android:layout_width="350dp"
-        android:layout_height="200dp"
-        android:layout_alignParentTop="true"
-        android:src="@mipmap/ic_launcher" />
-
-    <ImageView
-        android:id="@+id/cameraPreview"
-        android:layout_width="150dp"
-        android:layout_height="100dp"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignRight="@id/previewView"
-        android:layout_marginRight="10dp"
-        android:src="@mipmap/ic_launcher" />
-
-    <LinearLayout
-        android:id="@+id/ipAddressSet"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/previewView"
-        android:layout_alignParentStart="true"
-        android:layout_marginTop="15dp"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:layout_height="match_parent" />
 
-        <EditText
-            android:id="@+id/ipAddressForm"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="5dp"
-            android:hint="@string/ipAddress"
-            android:layout_weight="10" />
-
-        <EditText
-            android:id="@+id/portForm"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="5dp"
-            android:hint="@string/port"
-            android:layout_weight="4"
-            android:inputType="number"/>
-
-        <Button
-            android:id="@+id/ipSend"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_marginLeft="10dp"
-            android:layout_toRightOf="@id/ipAddressForm"
-            android:background="@drawable/btn_shape"
-            android:layout_weight="1"
-            android:text="@string/connect"
-            android:textColor="@color/white" />
-    </LinearLayout>
+    <Button
+        android:id="@+id/startStopButton"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="20dp"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="20dp"
+        android:background="@drawable/btn_shape_stop"
+        android:text="@string/stop"
+        android:textColor="@color/white"/>
 
 
-    <LinearLayout
-        android:id="@+id/groupOfButtons"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_below="@id/ipAddressSet"
-        android:layout_marginTop="15dp"
-        android:gravity="center"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/launchCameraButton"
-            android:background="@drawable/btn_shape"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="20dp"
-            android:layout_weight="1"
-            android:text="@string/launch_camera"
-            android:textColor="@color/white"
-            android:textStyle="bold"/>
-
-        <Button
-            android:id="@+id/getPicFromGallery"
-            android:background="@drawable/btn_shape"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="20dp"
-            android:layout_weight="1"
-            android:text="@string/getPic"
-            android:textColor="@color/white"
-            android:textStyle="bold"/>
-
-        <Button
-            android:id="@+id/sendPic"
-            android:background="@drawable/btn_shape"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/sendPic"
-            android:textColor="@color/white"
-            android:textStyle="bold"/>
-
-    </LinearLayout>
 </RelativeLayout>
