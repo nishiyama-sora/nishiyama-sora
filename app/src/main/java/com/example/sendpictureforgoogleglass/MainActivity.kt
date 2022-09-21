@@ -1,19 +1,17 @@
 package com.example.sendpictureforgoogleglass
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.*
 import android.content.ContentValues.TAG
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.*
+import android.media.Image
 import android.os.*
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 import android.widget.Toast.LENGTH_LONG
-import android.widget.Toast.LENGTH_SHORT
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -23,18 +21,17 @@ import com.example.sendpictureforgoogleglass.databinding.ActivityMainBinding
 import kotlinx.coroutines.*
 import java.io.*
 import java.net.InetSocketAddress
-import java.text.SimpleDateFormat
-import java.util.*
+import java.net.Socket
+import java.nio.ByteBuffer
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.net.Socket as Socket
 
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private var imageCapture: ImageCapture? = null
-    private lateinit var cameraExecutor:ExecutorService
+    private lateinit var cameraExecutor: ExecutorService
 
     private var situationObserve = true
 
@@ -55,8 +52,6 @@ class MainActivity : AppCompatActivity() {
         //リクエストするパーミッション
         val permissions = arrayOf(
             Manifest.permission.CAMERA, //カメラ
-            Manifest.permission.READ_EXTERNAL_STORAGE, //ストレージ読み込み
-            Manifest.permission.WRITE_EXTERNAL_STORAGE //ストレージ書き込み
         )
 
         checkPermission(permissions, REQUEST_CODE)
@@ -112,7 +107,9 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-            imageCapture = ImageCapture.Builder().build()
+            imageCapture = ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .build()
 
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
             try {
@@ -129,46 +126,8 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun takePhoto() {
-
-        val photoTitle = SimpleDateFormat("yy-MM-dd-HH-mm-ss-SSS", Locale.getDefault())
-            .format(System.currentTimeMillis())
 
 
-        val contentValues = ContentValues()
-        contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, photoTitle)
-        contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-
-
-        val outputOption = ImageCapture
-            .OutputFileOptions
-            .Builder(
-                contentResolver,
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                contentValues,
-            )
-            .build()
-
-        imageCapture?.takePicture(
-            outputOption, ContextCompat.getMainExecutor(this),
-            object : ImageCapture.OnImageSavedCallback {
-                //写真撮影失敗時
-                override fun onError(error: ImageCaptureException) {
-                    //Toast.makeText(this, "撮影に失敗しました", LENGTH_SHORT).show()
-                    error.printStackTrace()
-                    println("撮影失敗")
-                    //Log.e(TAG, "${error.message}", error)
-                }
-
-                //写真撮影成功時
-                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    //Toast.makeText(this@MainActivity, "撮影完了", LENGTH_SHORT).show()
-                    println("撮影完了")
-                }
-
-            }
-        )
-    }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -176,54 +135,51 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    @OptIn(DelicateCoroutinesApi::class)
+
+    //@OptIn(DelicateCoroutinesApi::class)
     private fun connect() {
-        val aN = AddressNumber.getInstance()
-
-
         //ストレージ読み込みの許可確認
-        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-            && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-            && checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             //許可済みの場合入力されたサーバーに対して写真撮影&画像送信を行う
-
-
-            //撮影された画像を特定
-            var count = 0
-            //撮影した写真を特定する
-            File("/storage/emulated/0/Pictures").walk().forEach {
-                if (it.isFile) {
-                    count++
-                }
-            }
-
-
-            //画像が2枚未満の場合，ダミー画像を作成
-            if (count < 2) {
-                for (i in 2-count downTo 0 step 1) {
-                    val bmp = BitmapFactory.decodeResource(resources, R.drawable.dummy)
-                    val imgName = "/storage/emulated/0/Pictures/" + "dummy" + i + ".jpg"
-
-                    try {
-                        val fileStream = FileOutputStream(imgName)
-                        bmp.compress(Bitmap.CompressFormat.JPEG, 70, fileStream)
-                        fileStream.flush()
-                        fileStream.close()
-                    } catch (e:Exception) {
-                        e.printStackTrace()
-                    }
-                    println("ダミー作成")
-                }
-            }
 
             //ソケット通信が成功したかの結果を格納する変数
             var success : Boolean = true
+            var tmp : Bitmap? = null
             //写真撮影＆送信
             GlobalScope.launch {
+
                 while (situationObserve) {
-                    takePhoto()
-                    delay(300)
-                    success = sendPicture()
+
+                    println("abc")
+                    delay(350)
+
+                    val b = async {
+
+                        imageCapture?.takePicture(
+                            ContextCompat.getMainExecutor(this@MainActivity),
+                            object : ImageCapture.OnImageCapturedCallback() {
+                                @SuppressLint("UnsafeOptInUsageError")
+                                override fun onCaptureSuccess(image: ImageProxy) {
+                                    println("done")
+                                    tmp = imageToToBitmap(image.image!!)
+                                    image.close()
+                                    //super.onCaptureSuccess(image)
+                                }
+
+                                override fun onError(exception: ImageCaptureException) {
+                                    println("failed")
+                                    //super.onError(exception)
+                                }
+                            })
+
+
+                        if (tmp != null) {
+                            success = sendPicture(bitmapToByte(tmp!!))
+                        }
+                    }
+                    b.await()
+                    println("def")
+
                     //写真送信が失敗した場合ループを抜けて，ボタンのテキストを変更
                     if (!success) {
                         situationObserve = false
@@ -245,68 +201,34 @@ class MainActivity : AppCompatActivity() {
 
 
     //画像をソケット通信で送信
-    private fun sendPicture(): Boolean {
-
-        var tmp : File? = null
-        var count = 0
+    //写真の送信に成功時にtrue，失敗時にfalseを返す
+    @SuppressLint("UnsafeOptInUsageError")
+    private fun sendPicture(imageByteArray: ByteArray): Boolean {
+        //var tmp : File? = null
+        //var count = 0
 
         var result = true
 
-        //撮影した写真を特定する
-        File("/storage/emulated/0/Pictures").walk().forEach {
-            //count++
-            //更新日が一番最近の画像ファイルを取得
-            if (it.isFile) {
-                count++
-                if (tmp == null) {
-                    tmp = it
-                } else if (it.lastModified() > tmp!!.lastModified()) {
-                    tmp = it
-                }
+        try {
+            val aN = AddressNumber.getInstance()
+            val address = InetSocketAddress(aN.ipAddressString, aN.portNumberInt)
+            val socket = Socket()
+            //3秒間の接続時間待ち
+            socket.connect(address, 3000)
+
+            //写真送信
+            val out = socket.getOutputStream()
+            out.write(imageByteArray)
+            out.close()
+            socket.close()
+            println("finish")
+        } catch (e: Exception) {
+            //送信失敗時テキストを表示し
+            GlobalScope.launch(Dispatchers.Main) {
+                Toast.makeText(this@MainActivity, "写真の送信に失敗しました", LENGTH_LONG).show()
             }
-        }
-
-
-        println(count)
-
-        if (count >= 1) {
-            try {
-                val aN = AddressNumber.getInstance()
-                val address = InetSocketAddress(aN.ipAddressString, aN.portNumberInt)
-                val socket = Socket()
-                //val connection = Socket(aN.ipAddressString, aN.portNumberInt)
-                val connection = socket.connect(address, 3000)
-                val out = socket.getOutputStream()
-                println(tmp?.path)
-
-                val options = BitmapFactory.Options()
-                options.inSampleSize = 4
-
-                val img = BitmapFactory.decodeFile(tmp?.path, options)
-
-
-                out.write(bitmapToByte(img))
-                out.close()
-                socket.close()
-                println("finish")
-
-
-                //写真削除
-                File(tmp?.path.toString()).delete()
-                //Files.delete(Paths.get(tmp?.path))
-
-                //ギャラリーからも消す（削除した画像へのパスの消去）
-                applicationContext.contentResolver.delete(
-                    MediaStore.Files.getContentUri("external"),
-                    MediaStore.Files.FileColumns.DATA + "=?",
-                    arrayOf(tmp?.path)
-                )
-
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                result = false
-            }
+            e.printStackTrace()
+            result = false
         }
 
         return result
@@ -314,12 +236,35 @@ class MainActivity : AppCompatActivity() {
     }
 
     //BitmapをByteに変換
-    private fun bitmapToByte(bmp:Bitmap):ByteArray{
+    private fun bitmapToByte(bmp: Bitmap):ByteArray{
 
         val stream = ByteArrayOutputStream()
-        bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        bmp.compress(Bitmap.CompressFormat.JPEG, 100, stream)
 
         return stream.toByteArray()
+    }
+
+    //
+    private fun imageToToBitmap(image: Image): Bitmap {
+        val data = imageToByteArray(image)
+        val options = BitmapFactory.Options()
+        //options.inSampleSize = 4
+        //options.inPreferredConfig = Bitmap.Config.RGB_565
+        val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
+
+        //return bitmap
+        return Bitmap.createScaledBitmap(bitmap, 200, 200, true)
+    }
+
+    // Image → JPEGのバイト配列
+    private fun imageToByteArray(image: Image): ByteArray {
+        var data: ByteArray? = null
+        val planes: Array<Image.Plane> = image.planes
+        val buffer: ByteBuffer = planes[0].buffer
+        data = ByteArray(buffer.capacity())
+        buffer[data]
+
+        return data
     }
 }
 
