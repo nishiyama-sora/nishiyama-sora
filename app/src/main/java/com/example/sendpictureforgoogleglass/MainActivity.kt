@@ -90,6 +90,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    @Suppress("SameParameterValue")
     private fun checkPermission(permissions: Array<out String>, requestCode: Int) {
         ActivityCompat.requestPermissions(this, permissions, requestCode)
     }
@@ -136,21 +137,21 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    //@OptIn(DelicateCoroutinesApi::class)
+    @Suppress("OPT_IN_IS_NOT_ENABLED")
+    @OptIn(DelicateCoroutinesApi::class)
     private fun connect() {
         //ストレージ読み込みの許可確認
         if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             //許可済みの場合入力されたサーバーに対して写真撮影&画像送信を行う
 
             //ソケット通信が成功したかの結果を格納する変数
-            var success : Boolean = true
+            var success = true
             var tmp : Bitmap? = null
             //写真撮影＆送信
             GlobalScope.launch {
 
                 while (situationObserve) {
 
-                    println("abc")
                     delay(350)
 
                     val b = async {
@@ -178,7 +179,6 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                     b.await()
-                    println("def")
 
                     //写真送信が失敗した場合ループを抜けて，ボタンのテキストを変更
                     if (!success) {
@@ -202,10 +202,9 @@ class MainActivity : AppCompatActivity() {
 
     //画像をソケット通信で送信
     //写真の送信に成功時にtrue，失敗時にfalseを返す
-    @SuppressLint("UnsafeOptInUsageError")
+    @Suppress("OPT_IN_IS_NOT_ENABLED")
+    @OptIn(DelicateCoroutinesApi::class)
     private fun sendPicture(imageByteArray: ByteArray): Boolean {
-        //var tmp : File? = null
-        //var count = 0
 
         var result = true
 
@@ -247,21 +246,17 @@ class MainActivity : AppCompatActivity() {
     //
     private fun imageToToBitmap(image: Image): Bitmap {
         val data = imageToByteArray(image)
-        val options = BitmapFactory.Options()
-        //options.inSampleSize = 4
-        //options.inPreferredConfig = Bitmap.Config.RGB_565
         val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
 
-        //return bitmap
         return Bitmap.createScaledBitmap(bitmap, 200, 200, true)
     }
 
     // Image → JPEGのバイト配列
     private fun imageToByteArray(image: Image): ByteArray {
-        var data: ByteArray? = null
+        //val data: ByteArray?
         val planes: Array<Image.Plane> = image.planes
         val buffer: ByteBuffer = planes[0].buffer
-        data = ByteArray(buffer.capacity())
+        val data = ByteArray(buffer.capacity())
         buffer[data]
 
         return data
