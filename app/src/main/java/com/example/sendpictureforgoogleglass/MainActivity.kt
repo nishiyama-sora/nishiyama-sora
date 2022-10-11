@@ -143,42 +143,37 @@ class MainActivity : AppCompatActivity() {
             //許可済みの場合入力されたサーバーに対して写真撮影&画像送信を行う
 
             //ソケット通信が成功したかの結果を格納する変数
-            var success : Boolean = true
+            var success = true
             var tmp : Bitmap? = null
             //写真撮影＆送信
             GlobalScope.launch {
 
                 while (situationObserve) {
 
-                    println("abc")
-                    delay(350)
+                    delay(500)    //cameraリクエストがたまってしまう現象があるので
 
-                    val b = async {
+                    imageCapture?.takePicture(
+                        ContextCompat.getMainExecutor(this@MainActivity),
+                        object : ImageCapture.OnImageCapturedCallback() {
+                            @SuppressLint("UnsafeOptInUsageError")
+                            override fun onCaptureSuccess(image: ImageProxy) {
+                                println("done")
+                                tmp = imageToToBitmap(image.image!!)
+                                image.close()
+                                //super.onCaptureSuccess(image)
+                            }
 
-                        imageCapture?.takePicture(
-                            ContextCompat.getMainExecutor(this@MainActivity),
-                            object : ImageCapture.OnImageCapturedCallback() {
-                                @SuppressLint("UnsafeOptInUsageError")
-                                override fun onCaptureSuccess(image: ImageProxy) {
-                                    println("done")
-                                    tmp = imageToToBitmap(image.image!!)
-                                    image.close()
-                                    //super.onCaptureSuccess(image)
-                                }
-
-                                override fun onError(exception: ImageCaptureException) {
-                                    println("failed")
-                                    //super.onError(exception)
-                                }
-                            })
+                            override fun onError(exception: ImageCaptureException) {
+                                println("failed")
+                                //super.onError(exception)
+                            }
+                        })
 
 
-                        if (tmp != null) {
-                            success = sendPicture(bitmapToByte(tmp!!))
-                        }
+                    if (tmp != null) {
+                        success = sendPicture(bitmapToByte(tmp!!))
                     }
-                    b.await()
-                    println("def")
+
 
                     //写真送信が失敗した場合ループを抜けて，ボタンのテキストを変更
                     if (!success) {
@@ -247,18 +242,15 @@ class MainActivity : AppCompatActivity() {
     //
     private fun imageToToBitmap(image: Image): Bitmap {
         val data = imageToByteArray(image)
-        val options = BitmapFactory.Options()
-        //options.inSampleSize = 4
-        //options.inPreferredConfig = Bitmap.Config.RGB_565
         val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
 
         //return bitmap
-        return Bitmap.createScaledBitmap(bitmap, 200, 200, true)
+        return Bitmap.createScaledBitmap(bitmap, 400, 400, true)
     }
 
     // Image → JPEGのバイト配列
     private fun imageToByteArray(image: Image): ByteArray {
-        var data: ByteArray? = null
+        val data: ByteArray?
         val planes: Array<Image.Plane> = image.planes
         val buffer: ByteBuffer = planes[0].buffer
         data = ByteArray(buffer.capacity())
