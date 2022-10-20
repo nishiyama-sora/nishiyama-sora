@@ -17,6 +17,7 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.getSystemService
 import com.example.sendpictureforgoogleglass.databinding.ActivityMainBinding
 import kotlinx.coroutines.*
 import java.io.*
@@ -33,13 +34,13 @@ class MainActivity : AppCompatActivity() {
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
 
+
     private var situationObserve = true
 
 
     companion object {
         const val REQUEST_CODE = 1000
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,13 +53,18 @@ class MainActivity : AppCompatActivity() {
         //リクエストするパーミッション
         val permissions = arrayOf(
             Manifest.permission.CAMERA, //カメラ
+            Manifest.permission.ACCESS_FINE_LOCATION, //位置情報
         )
 
         checkPermission(permissions, REQUEST_CODE)
 
 
-        startCamera()
-        connect()
+
+        //カメラ起動
+        //startCamera()
+        //送信開始
+        //connect()
+
 
 
         binding.startStopButton?.setOnClickListener{
@@ -139,7 +145,9 @@ class MainActivity : AppCompatActivity() {
     //@OptIn(DelicateCoroutinesApi::class)
     private fun connect() {
         //ストレージ読み込みの許可確認
-        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        ) {
             //許可済みの場合入力されたサーバーに対して写真撮影&画像送信を行う
 
             //ソケット通信が成功したかの結果を格納する変数
@@ -245,7 +253,7 @@ class MainActivity : AppCompatActivity() {
         val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
 
         //return bitmap
-        return Bitmap.createScaledBitmap(bitmap, 400, 400, true)
+        return Bitmap.createScaledBitmap(bitmap, 200, 200, true)
     }
 
     // Image → JPEGのバイト配列

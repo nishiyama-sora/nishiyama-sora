@@ -1,7 +1,6 @@
 package com.example.sendpictureforgoogleglass
 
 import android.app.Application
-import android.util.Log
 
 
 class AddressNumber : Application() {
